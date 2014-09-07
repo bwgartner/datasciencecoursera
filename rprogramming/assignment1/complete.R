@@ -19,9 +19,8 @@ complete <- function(directory, id = 1:332) {
         ## where 'id' is the monitor ID number and 'nobs' is the
         ## number of complete cases
 
-        # setup result matrix
-        m = matrix(nrow=length(id),ncol=2)
-        colnames(m) <- c("id","nobs")
+        # setup result data frame
+        df <- data.frame(id=1:length(id), nobs=1:length(id), row.names=NULL)
 
         # ready file handle list
         fh_list <- list.files(directory, full.names=TRUE)
@@ -33,9 +32,9 @@ complete <- function(directory, id = 1:332) {
                 #print(fh_id)
                 fh_nobs <- sum(complete.cases(read.csv(fh_list[fh_id])))
                 #print(fh_nobs)
-                m[i,"id"] <- fh_id
-                m[i,"nobs"] <- fh_nobs
+                df[i,"id"] <- fh_id
+                df[i,"nobs"] <- fh_nobs
         }
-	m
+	df
         
 }
