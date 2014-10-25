@@ -1,4 +1,4 @@
-run_analysis <- function(directory="Dataset", step=2, DEBUG=FALSE) {  ## FIXME dir with spaces in it
+run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME dir with spaces in it
 
     ## Prep
 
@@ -41,7 +41,7 @@ run_analysis <- function(directory="Dataset", step=2, DEBUG=FALSE) {  ## FIXME d
 	myOutputFileName <- c("output.txt")
 	myStatus <- c("Merge the training and test data together into one large data set",
 		      "Subset the merged data to only contain the *mean* and *std* variables",
-		      "Apply description names to the activites",
+		      "Apply descriptive names to the activites",
 		      "Update the generic variable names to descriptive values",
 		      "Create a summary data set that averages each of the values for a given activity and subject")
 
@@ -123,11 +123,11 @@ run_analysis <- function(directory="Dataset", step=2, DEBUG=FALSE) {  ## FIXME d
 		activityDF <- read.table(mapActivityFileName, header=FALSE, sep="")
 
         	# replace activity codes with Activity name
-		#for(target in c(activityDF[[1]]) {
-		#	gsub(target, c(activity[target,2], reducedDF$Activity)
-		#}
+		for(target in c(activityDF$V1)) {
+			reducedDF$Activity <- sapply(reducedDF$Activity, sub, pattern=target, replacement=activityDF[target,2])
+		}
 
-		#try(write.table(reducedDF,file=myOFN, row.name=FALSE))
+		try(write.table(reducedDF,file=myOFN, row.name=FALSE))
 		myStep <- myStep + 1
 	}
 
