@@ -1,6 +1,6 @@
 ## DATA Dictionary
 ## Wearable Computing and Activity Tracking Tidy Data
-### foo.txt
+### reference_output.txt
 
 ***
 Information about the variables (including units!) in the data set not contained in the tidy data

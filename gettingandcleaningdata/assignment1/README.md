@@ -4,7 +4,7 @@ Using 30 volunteer subjects, broken down into a smaller training group and a lar
 
 The [actual data set](http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones) from the study can be found here.
 
-While invaluable in it's raw form, it becomes more useful if merged, converged and manipulated towards becoming a [tidy data set](http://vita.had.co.nz/papers/tidy-data.pdf) to be shared for further review and analysis.
+While invaluable in it's raw form, it becomes more useful if merged, converged, manipulated, and somewhat analyzed towards becoming a [tidy data set](http://vita.had.co.nz/papers/tidy-data.pdf) to be shared for further review and analysis.
 
 This repository contains the following artifacts:
 
@@ -23,12 +23,12 @@ For reproducibility, the following steps can be utilized to exactly replicate an
 3. Download the [run_analysis.R](./run_analysis.R) script from this site into your working directory
 4. Using R or R-Studio in your working directory
 	* source("run\_analysis.R")
-	* run\_analysis()
+	* run\_analysis() which will return a data frame of the resulting, tidy data set
 5. The resulting tidy data summary should be written into a file in your working directory names ""
 	* you can then compare with the "reference_output.txt" file from this site to validate that the process was successful
 
 For transparency purposes, one can certainly review the [run_analysis.R](./run_analysis.R) script itself, but the following provides a pseudo-code overview of the various operations performed (assuming the script and the unzipped raw data are present in the working directory):
-	* NOTE: you can validate each step by running "run_analysis(step=X) and looking at the resulting Xoutput.txt file
+	* NOTE: you can validate each step by running "run_analysis(step=X) and looking at the resulting Xoutput.txt file in your working directory
 
 1. Merge the training and test data together into one large data set
 	* first creating a data from the columns of (in order)
@@ -43,20 +43,10 @@ For transparency purposes, one can certainly review the [run_analysis.R](./run_a
 	* which results in **10299** observations with **563** variables
 
 2. Subset the merged data (from the previous step) to only contain the *mean* and *standard deviation* measurements
-	* resulting in **10299** observations with **81** variables
+	* resulting in **10299** observations with **68** variables
 
-3. Apply description names to the activites (versus the simple numberic coded values from "activity\_labels.txt"
+3. Apply descriptive names to the activities (versus the simple numeric coded values from "activity\_labels.txt"
 
 4. Update the generic variable (column) names to descriptive values
 
-5. Create a summary data set from the previous step's output that averages each of the values for a given activity and subject
-
-
-
-This codebook provides the following information about the resulting tidy data set:
-
-Information about the variables (including units!) in the data set not contained in the tidy data
-
-Information about the summary choices you made
-
-Information about the experimental study design you used
+5. Create an ordered (by subject number) summary data set from the previous step's output that computes the arithmetic mean for each of the values for a given activity and subject. It also slightly modified the variable (column names to include the "Mean-" prefix as noted in the the [CodeBook.md](./CodeBook.md) file.

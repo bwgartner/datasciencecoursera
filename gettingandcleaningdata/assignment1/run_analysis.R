@@ -1,13 +1,13 @@
-run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME dir with spaces in it
+run_analysis <- function(directory="./UCI HAR Dataset", step=5) { 
+#run_analysis <- function(directory="Dataset", step=5, DEBUG=FALSE) {  ## FIXME dir with spaces in it
 
-    ## Prep
+    ## Prep / Error Checking
 
 	# 'directory' is a character vector of length 1 indicating
 	# the location of the extracted machine learning files
 	if(!file.exists(directory) || !file.info(directory)[1,"isdir"]) {
 		stop("Cannot find data directory : ", directory)
 	}
-	# print(directory)  # FIXME
 
 	# start in the data top-level directory (to shorten path references)
 	setwd(directory)
@@ -25,18 +25,19 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
 	}
 
 	subDirs <- c("test", "train")
-	#for(sd in subDirs) {
-	#        if(!file.exists(sd) || !file.info(sd)[1,"isdir"]) {
-	#                stop("Cannot find expected sub-directory for data : ", sd)
-	#        }
-	#}
+	for(sd in subDirs) {
+	        if(!file.exists(sd) || !file.info(sd)[1,"isdir"]) {
+	                stop("Cannot find expected sub-directory for data : ", sd)
+	        }
+	}
 
 	# setup input data frame, data vector
+	calcDF <- data.frame()
 	testDF <- data.frame()
 	trainDF <- data.frame()
 	mergeDF <- data.frame()
-	#result <- numeric()
-	#options(digits=4)
+	reducedDF <- data.frame()
+	outputDF <- data.frame()
 	myStep <- as.numeric(1)
 	myOutputFileName <- c("output.txt")
 	myStatus <- c("Merge the training and test data together into one large data set",
@@ -56,7 +57,6 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
         	# with ordered binding of subjectID, activityID, Data
         	for(sd in subDirs) {
 
-                	#print(sd)
                 	sID <- paste0(sd, "/", list.files(path=sd, pattern = "^subject"))
                 	aID <- paste0(sd, "/", list.files(path=sd, pattern = "^y_"))
                 	data <- paste0(sd, "/", list.files(path=sd, pattern = "^X_"))
@@ -65,18 +65,15 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
                         	testDF <- read.table(sID, header=FALSE, sep="")
                         	testDF <- cbind(testDF, read.table(aID, header=FALSE, sep=""))
                         	testDF <- cbind(testDF, read.table(data, header=FALSE, sep=""))
-                        	#dim(testDF)
                 	}
 
                 	if( sd == "train" ) {
                         	trainDF <- read.table(sID, header=FALSE, sep="")
                         	trainDF <- cbind(trainDF, read.table(aID, header=FALSE, sep=""))
                         	trainDF <- cbind(trainDF, read.table(data, header=FALSE, sep=""))
-                        	#dim(trainDF)
                 	}
         	}
         	mergeDF <- rbind(testDF, trainDF)
-        	#str(mergeDF)
 		try(write.table(mergeDF,file=myOFN, row.name=FALSE, col.name=FALSE))
 		myStep <- myStep + 1
 	}
@@ -93,22 +90,19 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
 		featuresDF <- read.table(mapFeaturesFileName, header=FALSE, sep="")
 
 		# label all columns for easier manipulation
-                cv <- c("SubjectID", "Activity")
-                cv <- union(cv, featuresDF$V2)
+                cv <- union(c("SubjectID", "Activity"), featuresDF$V2)
 		colnames(mergeDF) <- c(cv)
 
         	# find subset of columns of features to be retained
         	# using regexps for *mean()* and/or *sd()*
 		# should end up with 79 variables
-		colExtractDF <- subset(featuresDF, grepl("mean()", V2) | grepl("std()", V2))
-                colExtract <- colExtractDF$V2
+		colExtractDF <- subset(featuresDF, grepl("\\-mean\\(\\)", V2) | grepl("\\-std\\(\\)", V2))
 
 		# reduce the merged matrix to items of interest
-		ev <- c("SubjectID", "Activity")
-		ev <- union(ev, colExtractDF$V2)
+		ev <- union(c("SubjectID", "Activity"), colExtractDF$V2)
 		reducedDF <- subset(mergeDF, select = c(ev))
 
-		try(write.table(reducedDF,file=myOFN, row.name=FALSE, col.name=TRUE))
+		try(write.table(reducedDF,file=myOFN, row.name=FALSE, col.name=FALSE))
 		myStep <- myStep + 1
 	}
 
@@ -127,7 +121,7 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
 			reducedDF$Activity <- sapply(reducedDF$Activity, sub, pattern=target, replacement=activityDF[target,2])
 		}
 
-		try(write.table(reducedDF,file=myOFN, row.name=FALSE))
+		try(write.table(reducedDF,file=myOFN, row.name=FALSE, col.name=FALSE))
 		myStep <- myStep + 1
 	}
 
@@ -138,7 +132,10 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
 		myOFN <- paste0("../", myStep, myOutputFileName)
 		cat("Step ", myStep," : ", myStatus[myStep], ", see ", paste0(myStep, myOutputFileName), "\n")
 
-        	# label all columns with human readable values (and to provide
+        	# label all columns with human readable values
+		# (already completed in memory via step2, so now just include in output)
+
+		try(write.table(reducedDF,file=myOFN, row.name=FALSE, col.name=TRUE))
 		myStep <- myStep + 1
 	}
 
@@ -149,11 +146,43 @@ run_analysis <- function(directory="Dataset", step=3, DEBUG=FALSE) {  ## FIXME d
 		myOFN <- paste0("../", myStep, myOutputFileName)
 		cat("Step ", myStep," : ", myStatus[myStep], ", see ", paste0(myStep, myOutputFileName), "\n")
 
-        	# create summary tidy set, averaging each variable/column
-        	# across subjectID, testID clusters
+		# capture column names for later update
+		newCN <- names(reducedDF)
+
+        	# create summary tidy set, averaging each measured variable/column
+        	# across subjectID, testID clusters (reusing a lot of previous intermediate vectors)
+		for(sid in unique(reducedDF$SubjectID)) {
+			for(aid in unique(reducedDF$Activity)) {
+
+				# respective subset
+				calcDF <- subset(reducedDF, reducedDF$SubjectID == sid & reducedDF$Activity== aid)
+
+				# for respective subset calculate column means
+				newCM <- c(sid, aid, colMeans(calcDF[,3:ncol(calcDF)],na.rm=TRUE))
+				attributes(newCM) <- NULL
+				newCM<-data.frame(as.list(newCM))
+				colnames(newCM) <- newCN
+				outputDF <- rbind(outputDF,newCM)
+
+			}
+		}
+
+		# update respective column label with new designation according to calculation
+		for(colnum in 3:ncol(reducedDF)) {
+			newCN[colnum] <- paste0("Mean-",newCN[colnum])
+		}
+		colnames(outputDF) <- newCN
+
+		# sort output for aesthetic reasons
+		outputDF<-outputDF[order(as.numeric(as.character(outputDF$SubjectID)),outputDF$Activity),]
+
+		try(write.table(outputDF,file=myOFN, row.name=FALSE, col.name=TRUE))
 	}
 
     ## return to working directory to where we started
 	setwd("../")
+
+    ## return the result
+	return(outputDF)
 
 }
